@@ -14,12 +14,23 @@
 
 (() => {
   const action = new PlugIn.Action(function (selection, sender) {
+    // get today's date
+    const today = new Date()
 
     // build list of tasks to include
-
     const tasksToInclude = new Set()
 
-    if (selection.projects.length > 0) {
+    // get tasks due or deferred to today
+    const todayTasks = flattenedTasks.filter(task => {
+      return (
+    task.deferDate !== null && task.deferDate <= today &&
+    task.dueDate !== null && task.dueDate.getTime() === today &&
+    task.taskStatus !== Task.Status.Dropped &&
+    task.taskStatus !== Task.Status.Completed
+      )
+    })
+
+        if (selection.projects.length > 0) {
       selection.projects.forEach(project => {
         project.flattenedChildren
           .filter(task => !task.hasChildren && task.taskStatus !== Task.Status.Dropped && task.taskStatus !== Task.Status.Completed)
@@ -36,6 +47,8 @@
       selection.tags.forEach(tag => tag.remainingTasks.forEach(task => tasksToInclude.add(task)))
     }
 
+    todayTasks.forEach(task => tasksToInclude.add(task))
+console.log('todays tasks:' + todayTasks)
     // find tasks with no estimate and calculate total time
     const noEstimate = []
     let totalTime = 0
@@ -52,7 +65,7 @@
   })
 
   action.validate = function (selection, sender) {
-    return selection.tasks.length > 0 || selection.projects.length > 0 || selection.tags.length > 0
+    return true
   }
 
   return action
